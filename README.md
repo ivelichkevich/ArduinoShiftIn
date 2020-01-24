@@ -81,7 +81,7 @@ boolean pressed(int id) // wasn't pressed lasst frame, but is pressed now
 boolean released(int id) // was pressed last frame, but is released now
 ```
 
-This function (or the update function) should be called each frame exactly once. It will read in all values from the shift registers and it will return the new state.
+This function (or the update function) should be called each frame exactly once. It will read in all values from the shift registers.
 ``` c++
-ShiftType read()
+void read()
 ```
