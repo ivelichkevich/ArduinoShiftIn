@@ -24,7 +24,7 @@ Now you can actually use this library:
 #define SHIFT_REGISTER_CHIP_COUNT 1
 #include <ShiftIn.h>
 
-// declare pins: pLoadPin, clockEnablePin, dataPin, clockPin
+// declare pins: ploadPin, clockPin, dataPin, clockEnablePin
 ShiftIn shift(8,12,11,9);
 
 void setup()
