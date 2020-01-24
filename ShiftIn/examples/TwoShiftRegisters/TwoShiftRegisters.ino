@@ -1,23 +1,29 @@
+#define SHIFT_REGISTER_CHIP_COUNT 2
 #include <ShiftIn.h>
 
-// Init ShiftIn instance with a two chips
-ShiftIn<2> shift;
+ShiftIn shift(8,12,11,9);
 
-void setup() {
-	Serial.begin(9600);
-	// declare pins: pLoadPin, clockEnablePin, dataPin, clockPin
-	shift.begin(8, 9, 11, 12);
+void setup()
+{
+	Serial.begin(115200);
 }
 
-void displayValues() {
-	// print out all 16 buttons
-	for(int i = 0; i < shift.getDataWidth(); i++)
-		Serial.print( shift.state(i) ); // get state of button i
-	Serial.println();
-}
+void loop()
+{
+	shift.read();
 
-void loop() {
-	if(shift.update()) // read in all values. returns true if any button has changed
-		displayValues();
-	delay(1);
+	for (int n = 0; n < 16; ++n)
+	{
+		if (shift.state(n))
+		{
+			Serial.print("1");
+		}
+		else
+		{
+			Serial.print("0");
+		}
+	}
+
+	Serial.println("");
+	delay(1000);
 }
