@@ -62,16 +62,16 @@ public:
 	// whether the value with index 'pin_id' has changed
 	inline boolean hasChanged(int pin_id)
 	{
-		int nChipID = id / 8;
-		int nBit = id % 8;
+		int nChipID = pin_id / 8;
+		int nBit = pin_id % 8;
 		return bitRead(lastState[nChipID], nBit) != bitRead(currentState[nChipID], nBit); 
 	}
 
-	// whether button 'id' is pressed or not
-	inline boolean state(int id)
+	// whether button 'pin_id' is pressed or not
+	inline boolean state(int pin_id)
 	{
-		int nChipID = id / 8;
-		int nBit = id % 8;
+		int nChipID = pin_id / 8;
+		int nBit = pin_id % 8;
 		return bitRead(currentState[nChipID], nBit); 
 	}
 
@@ -80,27 +80,27 @@ public:
 		return currentState;
 	}
 
-	// whether button 'id' was pressed in the last frame
-	inline boolean last(int id)
+	// whether button 'pin_id' was pressed in the last frame
+	inline boolean last(int pin_id)
 	{
-		int nChipID = id / 8;
-		int nBit = id % 8;
+		int nChipID = pin_id / 8;
+		int nBit = pin_id % 8;
 		return bitRead(lastState[nChipID], nBit);
 	}
 
-	// whether button 'id' is now pressed, but wasn't pressed in the last frame
-	inline boolean pressed(int id)
+	// whether button 'pin_id' is now pressed, but wasn't pressed in the last frame
+	inline boolean pressed(int pin_id)
 	{
-		int nChipID = id / 8;
-		int nBit = id % 8;
+		int nChipID = pin_id / 8;
+		int nBit = pin_id % 8;
 		return !bitRead(lastState[nChipID], nBit) && bitRead(currentState[nChipID], nBit);
 	}
 
-	// whether button 'id' is now released, but was pressed in the last frame
-	inline boolean released(int id)
+	// whether button 'pin_id' is now released, but was pressed in the last frame
+	inline boolean released(int pin_id)
 	{
-		int nChipID = id / 8;
-		int nBit = id % 8;
+		int nChipID = pin_id / 8;
+		int nBit = pin_id % 8;
 		return bitRead(lastState[nChipID], nBit) && !bitRead(currentState[nChipID], nBit);
 	}
 
