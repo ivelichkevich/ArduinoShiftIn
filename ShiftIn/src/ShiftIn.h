@@ -107,7 +107,7 @@ public:
 	// read in data from shift register
 	void read()
 	{
-		for (int nChipID=dataWidth/8-1; nChipID >= 0; --nChipID)
+		for(int nChipID = 0; nChipID < dataWidth/8; ++nChipID)
 		{
 			lastState[nChipID] = currentState[nChipID];
 			currentState[nChipID] = 0;
@@ -119,9 +119,9 @@ public:
 		digitalWrite(ploadPin, HIGH);
 		digitalWrite(clockEnablePin, LOW);
 
-		for(int nChipID = dataWidth/8-1; nChipID >= 0; nChipID--)
+		for(int nChipID = 0; nChipID < dataWidth/8; ++nChipID)
 		{
-			for(int nBitID = 7; nBitID >= 0; nBitID--)
+			for(int nBitID = 0; nBitID < 8; ++nBitID)
 			{
 				byte value = digitalRead(dataPin);
 				currentState[nChipID] |= value << nBitID;
