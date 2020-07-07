@@ -22,109 +22,82 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-
 #ifndef ShiftIn_h
 #define ShiftIn_h
 
-#ifndef SHIFT_REGISTER_CHIP_COUNT
-#error "SHIFT_REGISTER_CHIP_COUNT need to be set to the number of 74HC165 used"
-#endif
-
 #include <Arduino.h>
 
-class ShiftIn
-{
-private:
+class ShiftIn {
+protected:
     byte ploadPin;
-    byte clockEnablePin;
-    byte dataPin;
     byte clockPin;
-
+    byte dataPin;
+    byte clockEnPin;
+    const uint8_t regCount;
     const uint16_t dataWidth;
     uint8_t pulseWidth;
-
-    byte lastState[SHIFT_REGISTER_CHIP_COUNT];
-    byte currentState[SHIFT_REGISTER_CHIP_COUNT];
-
+    byte* lastState;
+    byte* currentState;
 public:
-    ShiftIn(int pload_pin01, int clock_pin2, int data_pin09, int clockEN_pin15) : dataWidth(SHIFT_REGISTER_CHIP_COUNT * 8), pulseWidth(5)
-    {
-        pinMode(ploadPin = pload_pin01, OUTPUT);				// Connects to Parallel load pin the 165
-        pinMode(clockPin = clock_pin2, OUTPUT);				// Connects to the Clock pin the 165
-        pinMode(dataPin = data_pin09, INPUT);					// Connects to the Q7 pin the 165
-        pinMode(clockEnablePin = clockEN_pin15, OUTPUT);	// Connects to Clock Enable pin the 165
+    ShiftIn(int ploadPin, int clockPin, int dataPin, int clockEnPin, int regCount) : regCount(regCount), dataWidth(regCount << 3), pulseWidth(5) {
+        pinMode(this->ploadPin = ploadPin, OUTPUT);      // Connects to Parallel load pin the 165
+        pinMode(this->clockPin = clockPin, OUTPUT);      // Connects to the Clock pin the 165
+        pinMode(this->dataPin = dataPin, INPUT); 	     // Connects to the Q7 pin the 165
+        pinMode(this->clockEnPin = clockEnPin, OUTPUT);	 // Connects to Clock Enable pin the 165
+        lastState = new byte[regCount];
+        currentState = new byte[regCount];
     }
-
+    virtual ~ShiftIn() {
+        delete [] lastState;
+        delete [] currentState;
+    }
     inline uint8_t getPulseWidth() { return pulseWidth; }
     inline void setPulseWidth(uint8_t value) { pulseWidth = value; }
     inline uint16_t getDataWidth() { return dataWidth; }
-
-    // whether the value with index 'pin_id' has changed
-    inline boolean hasChanged(int pin_id)
-    {
-        int nChipID = pin_id / 8;
-        int nBit = pin_id % 8;
-        return bitRead(lastState[nChipID], nBit) != bitRead(currentState[nChipID], nBit);
+    inline const byte* getCurrentState() { return currentState; }
+    /** whether the value with index 'pinNum' has changed */
+    inline boolean hasChanged(int pinNum) {
+        int nReg = pinNum / 8;
+        int nBit = pinNum % 8;
+        return bitRead(lastState[nReg], nBit) != bitRead(currentState[nReg], nBit);
     }
-
-    // whether button 'pin_id' is pressed or not
-    inline boolean state(int pin_id)
-    {
-        int nChipID = pin_id / 8;
-        int nBit = pin_id % 8;
-        return bitRead(currentState[nChipID], nBit);
+    /** whether button 'pinNum' is pressed or not */
+    inline boolean state(int pinNum) {
+        int nReg = pinNum / 8;
+        int nBit = pinNum % 8;
+        return bitRead(currentState[nReg], nBit);
+        Ъ
+    /** whether button 'pinNum' was pressed in the last frame */
+    inline boolean last(int pinNum) {
+        int nReg = pinNum / 8;
+        int nBit = pinNum % 8;
+        return bitRead(lastState[nReg], nBit);
     }
-
-    inline const byte* GetStates()
-    {
-        return currentState;
+    /** whether button 'pinNum' is now pressed, but wasn't pressed in the last frame */
+    inline boolean pressed(int pinNum) {
+        int nReg = pinNum / 8;
+        int nBit = pinNum % 8;
+        return !bitRead(lastState[nReg], nBit) && bitRead(currentState[nReg], nBit);
     }
-
-    // whether button 'pin_id' was pressed in the last frame
-    inline boolean last(int pin_id)
-    {
-        int nChipID = pin_id / 8;
-        int nBit = pin_id % 8;
-        return bitRead(lastState[nChipID], nBit);
+    /** whether button 'pinNum' is now released, but was pressed in the last frame*/
+    inline boolean released(int pinNum) {
+        int nReg = pinNum / 8;
+        int nBit = pinNum % 8;
+        return bitRead(lastState[nReg], nBit) && !bitRead(currentState[nReg], nBit);
     }
-
-    // whether button 'pin_id' is now pressed, but wasn't pressed in the last frame
-    inline boolean pressed(int pin_id)
-    {
-        int nChipID = pin_id / 8;
-        int nBit = pin_id % 8;
-        return !bitRead(lastState[nChipID], nBit) && bitRead(currentState[nChipID], nBit);
-    }
-
-    // whether button 'pin_id' is now released, but was pressed in the last frame
-    inline boolean released(int pin_id)
-    {
-        int nChipID = pin_id / 8;
-        int nBit = pin_id % 8;
-        return bitRead(lastState[nChipID], nBit) && !bitRead(currentState[nChipID], nBit);
-    }
-
-    // read in data from shift register
-    void read()
-    {
-        for(int nChipID = 0; nChipID < dataWidth/8; ++nChipID)
-        {
-            lastState[nChipID] = currentState[nChipID];
-            currentState[nChipID] = 0;
-        }
-
-        digitalWrite(clockEnablePin, HIGH);
+    /** read in data from shift register */
+    void read() {
+        memcpy(lastState, currentState, regCount);
+        memset(currentState, 0, regCount);
+        digitalWrite(clockEnPin, HIGH);
         digitalWrite(ploadPin, LOW);
         delayMicroseconds(pulseWidth);
         digitalWrite(ploadPin, HIGH);
-        digitalWrite(clockEnablePin, LOW);
-
-        for(int nChipID = 0; nChipID < dataWidth/8; ++nChipID)
-        {
-            for(int nBitID = 0; nBitID < 8; ++nBitID)
-            {
+        digitalWrite(clockEnPin, LOW);
+        for(int nReg = 0; nReg < regCount; ++nReg) {
+            for(int nBit = 0; nBit < 8; ++nBit) {
                 byte value = digitalRead(dataPin);
-                currentState[nChipID] |= value << nBitID;
+                currentState[nReg] |= value << nBit;
                 digitalWrite(clockPin, HIGH);
                 delayMicroseconds(pulseWidth);
                 digitalWrite(clockPin, LOW);

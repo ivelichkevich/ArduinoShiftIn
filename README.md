@@ -21,41 +21,24 @@ If you have installed this library, you can include it by navigating to *Sketch*
 Now you can actually use this library:
 ``` c++
 // Init ShiftIn instance with one chip.
-#define SHIFT_REGISTER_CHIP_COUNT 1
 #include <ShiftIn.h>
 
-// declare pins: ploadPin, clockPin, dataPin, clockEnablePin
-ShiftIn shift(8,12,11,9);
+ShiftIn shift(8,12,11,9, 1);
 
-void setup()
-{
-  Serial.begin(115200);
-}
+void setup() { Serial.begin(115200); }
 
-void loop()
-{
-  shift.read();
-
-  for (int n = 0; n < 8; ++n)
-  {
-    // Show state of each buttons
-    if (shift.state(n))
-    {
-      Serial.print("1");
+void loop() {
+    shift.read();
+    for (int n = 0; n < 8; ++n) {
+        if (shift.state(n)) { Serial.print("1"); }
+        else  { Serial.print("0"); }
     }
-    else
-    {
-      Serial.print("0");
-    }
-  }
-
-  Serial.println("");
-  delay(1000);
+    Serial.println("");
+    delay(1000);
 }
 ```
 ![Breadboard layout for one shift register](ShiftIn/examples/SingleShiftRegister/Layout1.png)
 
-If you want to use two shift registers, you only have to change the declaration from `#define SHIFT_REGISTER_CHIP_COUNT 1` to `#define SHIFT_REGISTER_CHIP_COUNT 2`. The layout can look like this;
 ![Breadboard layout for two shift registers](ShiftIn/examples/TwoShiftRegisters/Layout2.png)
 
 Gets/sets the delay time for the clock pin (in microseconds). This value defaults to 5 and in most cases there's no need to change it.
