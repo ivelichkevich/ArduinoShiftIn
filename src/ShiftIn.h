@@ -66,7 +66,7 @@ public:
         int nReg = pinNum / 8;
         int nBit = pinNum % 8;
         return bitRead(currentState[nReg], nBit);
-        Ъ
+    }
     /** whether button 'pinNum' was pressed in the last frame */
     inline boolean last(int pinNum) {
         int nReg = pinNum / 8;
