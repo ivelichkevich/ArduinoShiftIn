@@ -1,15 +1,13 @@
 #include <ShiftIn.h>
 
-ShiftIn shift(8,12,11,9, 1);
+ShiftIn<1> shift(8, 9, 11, 12); // Init ShiftIn instance with a single chip
 
-void setup() { Serial.begin(115200); }
-
+void displayValues() { // print out all 8 buttons
+    for(int i = 0; i < shift.getDataWidth(); i++) Serial.print( shift.state(i) ); // get state of button i
+    Serial.println();
+}
+void setup() { Serial.begin(9600); }
 void loop() {
-    shift.read();
-    for (int n = 0; n < 8; ++n) {
-        if (shift.state(n)) { Serial.print("1"); }
-        else  { Serial.print("0"); }
-    }
-    Serial.println("");
-    delay(1000);
+    if(shift.update()) displayValues(); // read in all values. returns true if any button has changed
+    delay(1);
 }

@@ -5,15 +5,19 @@
  *
 LICENSE
 The MIT License (MIT)
+
 Copyright (c) 2016 Henrik
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,86 +28,85 @@ SOFTWARE.
  */
 #ifndef ShiftIn_h
 #define ShiftIn_h
+#include "Arduino.h"
 
-#include <Arduino.h>
+struct BaseShiftIn {
+    virtual uint8_t getPulseWidth() = 0;
+    virtual void setPulseWidth(uint8_t value) = 0;
+    virtual uint16_t getDataWidth() = 0;
+    /** whether some value has changed */
+    virtual boolean hasChanged() = 0;
+    /** whether the value with index 'nBit' has changed */
+    virtual boolean hasChanged(int nBit) = 0;
+    /** whether button 'nBit' is pressed or not */
+    virtual boolean state(int nBit) = 0;
+    /** whether button 'nBit' was pressed in the last frame */
+    virtual boolean last(int nBit) = 0;
+    /** whether button 'nBit' is now pressed, but wasn't pressed in the last frame */
+    virtual boolean pressed(int nBit) = 0;
+    /** whether button 'nBit' is now released, but was pressed in the last frame */
+    virtual boolean released(int nBit) = 0;
+    /** same as read, but it returns whether something has changed or not */
+    virtual boolean update() = 0;
+};
 
-class ShiftIn {
+template<byte chipCount, typename ShiftType> class _ShiftIn : public BaseShiftIn {
 protected:
     byte ploadPin;
-    byte clockPin;
+    byte clockEnablePin;
     byte dataPin;
-    byte clockEnPin;
-    const uint8_t regCount;
-    const uint16_t dataWidth;
-    uint8_t pulseWidth;
-    byte* lastState;
-    byte* currentState;
-public:
-    ShiftIn(int ploadPin, int clockPin, int dataPin, int clockEnPin, int regCount) : regCount(regCount), dataWidth(regCount << 3), pulseWidth(5) {
-        pinMode(this->ploadPin = ploadPin, OUTPUT);      // Connects to Parallel load pin the 165
-        pinMode(this->clockPin = clockPin, OUTPUT);      // Connects to the Clock pin the 165
-        pinMode(this->dataPin = dataPin, INPUT); 	     // Connects to the Q7 pin the 165
-        pinMode(this->clockEnPin = clockEnPin, OUTPUT);	 // Connects to Clock Enable pin the 165
-        lastState = new byte[regCount];
-        currentState = new byte[regCount];
-    }
-    virtual ~ShiftIn() {
-        delete [] lastState;
-        delete [] currentState;
-    }
-    inline uint8_t getPulseWidth() { return pulseWidth; }
-    inline void setPulseWidth(uint8_t value) { pulseWidth = value; }
-    inline uint16_t getDataWidth() { return dataWidth; }
-    inline const byte* getCurrentState() { return currentState; }
-    /** whether the value with index 'pinNum' has changed */
-    inline boolean hasChanged(int pinNum) {
-        int nReg = pinNum / 8;
-        int nBit = pinNum % 8;
-        return bitRead(lastState[nReg], nBit) != bitRead(currentState[nReg], nBit);
-    }
-    /** whether button 'pinNum' is pressed or not */
-    inline boolean state(int pinNum) {
-        int nReg = pinNum / 8;
-        int nBit = pinNum % 8;
-        return bitRead(currentState[nReg], nBit);
-    }
-    /** whether button 'pinNum' was pressed in the last frame */
-    inline boolean last(int pinNum) {
-        int nReg = pinNum / 8;
-        int nBit = pinNum % 8;
-        return bitRead(lastState[nReg], nBit);
-    }
-    /** whether button 'pinNum' is now pressed, but wasn't pressed in the last frame */
-    inline boolean pressed(int pinNum) {
-        int nReg = pinNum / 8;
-        int nBit = pinNum % 8;
-        return !bitRead(lastState[nReg], nBit) && bitRead(currentState[nReg], nBit);
-    }
-    /** whether button 'pinNum' is now released, but was pressed in the last frame*/
-    inline boolean released(int pinNum) {
-        int nReg = pinNum / 8;
-        int nBit = pinNum % 8;
-        return bitRead(lastState[nReg], nBit) && !bitRead(currentState[nReg], nBit);
-    }
-    /** read in data from shift register */
-    void read() {
-        memcpy(lastState, currentState, regCount);
-        memset(currentState, 0, regCount);
-        digitalWrite(clockEnPin, HIGH);
+    byte clockPin;
+    uint16_t dataWidth;
+    uint8_t pulseWidth = 5;
+    ShiftType lastState = 0;
+    ShiftType currentState = 0;
+    /** read in data from shift register and return the new value */
+    ShiftType read() {
+        lastState = currentState;
+        ShiftType result = 0;
+        digitalWrite(clockEnablePin, HIGH);
         digitalWrite(ploadPin, LOW);
         delayMicroseconds(pulseWidth);
         digitalWrite(ploadPin, HIGH);
-        digitalWrite(clockEnPin, LOW);
-        for(int nReg = 0; nReg < regCount; ++nReg) {
-            for(int nBit = 0; nBit < 8; ++nBit) {
-                byte value = digitalRead(dataPin);
-                currentState[nReg] |= value << nBit;
-                digitalWrite(clockPin, HIGH);
-                delayMicroseconds(pulseWidth);
-                digitalWrite(clockPin, LOW);
-            }
+        digitalWrite(clockEnablePin, LOW);
+        for(int i = 0; i < dataWidth; i++) {
+            ShiftType value = digitalRead(dataPin);
+            result |= (value << ((dataWidth-1) - i));
+            digitalWrite(clockPin, HIGH);
+            delayMicroseconds(pulseWidth);
+            digitalWrite(clockPin, LOW);
         }
+        currentState = result;
+        return result;
     }
+public:
+    _ShiftIn(int pload, int clockEN, int data, int clock) : dataWidth(chipCount * 8) {
+        pinMode(ploadPin = pload, OUTPUT);
+        pinMode(clockEnablePin = clockEN, OUTPUT);
+        pinMode(dataPin = data, INPUT);
+        pinMode(clockPin = clock, OUTPUT);
+    }
+    uint8_t getPulseWidth() override { return pulseWidth; }
+    void setPulseWidth(uint8_t value) override { pulseWidth = value; }
+    uint16_t getDataWidth() override { return dataWidth; }
+    boolean hasChanged() override { return lastState != currentState; }
+    boolean hasChanged(int nBit) override { return state(nBit) != last(nBit); }
+    boolean state(int nBit) override { return bitRead(currentState, nBit); }
+    boolean last(int nBit) override { return bitRead(lastState, nBit); }
+    boolean pressed(int nBit) override { return !last(nBit) && state(nBit); }
+    boolean released(int nBit) override { return last(nBit) && !state(nBit); }
+    boolean update() override { return read() != lastState; }
+    /** returns the state from the last frame */
+    inline ShiftType getLast() { return lastState; }
+    /** returns the current state */
+    inline ShiftType getCurrent() { return currentState; }
 };
-
+/** fallback with 64 bit state (up to 8 shift registers in chipCount param) */
+template<byte chipCount> class ShiftIn : public _ShiftIn<chipCount, uint64_t> {
+    public: ShiftIn(int pload, int clockEN, int data, int clock) : _ShiftIn<chipCount, uint64_t>(pload, clockEN, data, clock) {}
+};
+template<> class ShiftIn<1> : public _ShiftIn<1, uint8_t>  {public: ShiftIn(int pload, int clockEN, int data, int clock):_ShiftIn(pload, clockEN, data, clock){}};
+template<> class ShiftIn<2> : public _ShiftIn<2, uint16_t> {public: ShiftIn(int pload, int clockEN, int data, int clock):_ShiftIn(pload, clockEN, data, clock){}};
+template<> class ShiftIn<3> : public _ShiftIn<3, uint32_t> {public: ShiftIn(int pload, int clockEN, int data, int clock):_ShiftIn(pload, clockEN, data, clock){}};
+template<> class ShiftIn<4> : public _ShiftIn<4, uint32_t> {public: ShiftIn(int pload, int clockEN, int data, int clock):_ShiftIn(pload, clockEN, data, clock){}};
 #endif

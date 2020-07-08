@@ -6,7 +6,7 @@
         "type": "git",
         "url": "https://github.com/ivelichkevich/ArduinoShiftIn.git"
     },
-    "version": "2.2",
+    "version": "2.3",
     "exclude": "tests",
     "examples": "examples/*/*.ino",
     "frameworks": "arduino",

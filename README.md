@@ -20,26 +20,36 @@ If you have installed this library, you can include it by navigating to *Sketch*
 
 Now you can actually use this library:
 ``` c++
-// Init ShiftIn instance with one chip.
 #include <ShiftIn.h>
 
-ShiftIn shift(8,12,11,9, 1);
+// Init ShiftIn instance with one chip.
+// The number in brackets defines the number of daisy-chained 74HC165 chips
+// So if you are using two chips, you would write: ShiftIn<2> shift;
+ShiftIn<1> shift(8, 9, 11, 12); // Init ShiftIn instance with a single chip
 
-void setup() { Serial.begin(115200); }
-
+void displayValues() { // print out all 8 buttons
+    for(int i = 0; i < shift.getDataWidth(); i++) Serial.print( shift.state(i) ); // get state of button i
+    Serial.println();
+}
+void setup() { Serial.begin(9600); }
 void loop() {
-    shift.read();
-    for (int n = 0; n < 8; ++n) {
-        if (shift.state(n)) { Serial.print("1"); }
-        else  { Serial.print("0"); }
-    }
-    Serial.println("");
-    delay(1000);
+    if(shift.update()) displayValues(); // read in all values. returns true if any button has changed
+    delay(1);
 }
 ```
 ![Breadboard layout for one shift register](ShiftIn/examples/SingleShiftRegister/Layout1.png)
 
+If you want to use two shift registers, you only have to change the declaration from `ShiftIn<1> shift;` to `ShiftIn<2> shift;`. The layout can look like this;
 ![Breadboard layout for two shift registers](ShiftIn/examples/TwoShiftRegisters/Layout2.png)
+
+# API
+Depending on the number of chips, this library will use different data types.
+If you are only using one chip, the type `ShiftType` will be an `unsigned byte` (`uint8_t`). For two chips it will be an `unsigned int` (`uint16_t`). For three and four chips it will be an `unsigned long` (`uint32_t`) and for 5 to 8 chips it will be an `unsigned long long` (`uint64_t`). More than eight chips are not supported yet.
+
+This function must be called in the `setup` function. It is used to tell the library the pins it should use.
+``` c++
+void begin(int ploadPin, int clockEnablePin, int dataPin, int clockPin)
+```
 
 Gets/sets the delay time for the clock pin (in microseconds). This value defaults to 5 and in most cases there's no need to change it.
 ``` c++
@@ -47,9 +57,21 @@ uint8_t getPulseWidth()
 void setPulseWidth(uint8_t value)
 ```
 
-Returns true if button i has changed its state during the last frame.
+Returns the number of buttons (bits in the state)
 ``` c++
-boolean hasChanged(int i)
+uint16_t getDataWidth()
+```
+
+Returns true if any button has changed its state during the last frame.
+``` c++
+boolean hasChanged()
+boolean hasChanged(int i) // same as above, but only for button i
+```
+
+Returns the complete state for this frame / last frame
+``` c++
+ShiftType getCurrent()
+ShiftType getLast()
 ```
 
 Returns the state of a single button for this frame / last frame
@@ -64,7 +86,7 @@ boolean pressed(int id) // wasn't pressed lasst frame, but is pressed now
 boolean released(int id) // was pressed last frame, but is released now
 ```
 
-This function (or the update function) should be called each frame exactly once. It will read in all values from the shift registers.
+This function should be called each frame exactly once, it will return `true` if some button has changed its state and `false` otherwise
 ``` c++
-void read()
+boolean update()
 ```
