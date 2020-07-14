@@ -8,7 +8,7 @@ void displayValues() {
 
 void setup() {
     Serial.begin(9600);
-    shift = new ShiftIn<5>(8, 9, 11, 12);
+    shift = shiftInFactory(2, 8, 9, 11, 12);
 }
 
 void loop() {

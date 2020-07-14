@@ -109,4 +109,17 @@ template<> class ShiftIn<1> : public _ShiftIn<1, uint8_t>  {public: ShiftIn(int 
 template<> class ShiftIn<2> : public _ShiftIn<2, uint16_t> {public: ShiftIn(int pload, int clockEN, int data, int clock):_ShiftIn(pload, clockEN, data, clock){}};
 template<> class ShiftIn<3> : public _ShiftIn<3, uint32_t> {public: ShiftIn(int pload, int clockEN, int data, int clock):_ShiftIn(pload, clockEN, data, clock){}};
 template<> class ShiftIn<4> : public _ShiftIn<4, uint32_t> {public: ShiftIn(int pload, int clockEN, int data, int clock):_ShiftIn(pload, clockEN, data, clock){}};
+
+BaseShiftIn* shiftInFactory(byte n, byte pload, byte clkEN, byte dataIn, byte clock) {
+    switch (n) {
+        case 1: return new ShiftIn<1>(pload, clkEN, dataIn, clock);
+        case 2: return new ShiftIn<2>(pload, clkEN, dataIn, clock);
+        case 3: return new ShiftIn<3>(pload, clkEN, dataIn, clock);
+        case 4: return new ShiftIn<4>(pload, clkEN, dataIn, clock);
+        case 5: return new ShiftIn<5>(pload, clkEN, dataIn, clock);
+        case 6: return new ShiftIn<6>(pload, clkEN, dataIn, clock);
+        case 7: return new ShiftIn<7>(pload, clkEN, dataIn, clock);
+        case 8: return new ShiftIn<8>(pload, clkEN, dataIn, clock);
+    }
+}
 #endif
