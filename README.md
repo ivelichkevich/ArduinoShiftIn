@@ -25,22 +25,22 @@ Now you can actually use this library:
 // Init ShiftIn instance with one chip.
 // The number in brackets defines the number of daisy-chained 74HC165 chips
 // So if you are using two chips, you would write: ShiftIn<2> shift;
-ShiftIn<1> shift(8, 9, 11, 12); // Init ShiftIn instance with a single chip
+//BaseShiftIn* shift = shiftInFactory(1, 9, 11, 12);
 
 void displayValues() { // print out all 8 buttons
-    for(int i = 0; i < shift.getDataWidth(); i++) Serial.print( shift.state(i) ); // get state of button i
+    for(int i = 0; i < shift->getDataWidth(); i++) Serial.print( shift->state(i) ); // get state of button i
     Serial.println();
 }
 void setup() { Serial.begin(9600); }
 void loop() {
-    if(shift.update()) displayValues(); // read in all values. returns true if any button has changed
+    if(shift->update()) displayValues(); // read in all values. returns true if any button has changed
     delay(1);
 }
 ```
-![Breadboard layout for one shift register](ShiftIn/examples/SingleShiftRegister/Layout1.png)
+![Breadboard layout for one shift register](examples/SingleShiftRegister/Layout1.png)
 
 If you want to use two shift registers, you only have to change the declaration from `ShiftIn<1> shift;` to `ShiftIn<2> shift;`. The layout can look like this;
-![Breadboard layout for two shift registers](ShiftIn/examples/TwoShiftRegisters/Layout2.png)
+![Breadboard layout for two shift registers](examples/TwoShiftRegisters/Layout2.png)
 
 # API
 Depending on the number of chips, this library will use different data types.
